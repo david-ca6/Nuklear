@@ -22266,6 +22266,13 @@ nk_spacer(struct nk_context *ctx )
     nk_panel_alloc_space( &dummy_rect, ctx );
 }
 
+NK_API void
+nk_separator(struct nk_context *ctx )
+{
+    struct nk_rect dummy_rect = { 0, 0, 0, 0 };
+    nk_panel_alloc_space( &dummy_rect, ctx );
+    nk_stroke_line(&ctx->current->buffer, dummy_rect.x, dummy_rect.y+dummy_rect.h/2, dummy_rect.x+dummy_rect.w, dummy_rect.y+dummy_rect.h/2, 1.0f, nk_rgb(255, 255, 255));
+}
 
 
 
@@ -28017,16 +28024,16 @@ nk_property(struct nk_context *ctx, const char *name, struct nk_property_variant
         win->property.select_start = *select_begin;
         win->property.select_end = *select_end;
         if (*state == NK_PROPERTY_DRAG) {
-            ctx->input.mouse.grab = nk_true;
-            ctx->input.mouse.grabbed = nk_true;
+            ////ctx->input.mouse.grab = nk_true;
+            ////ctx->input.mouse.grabbed = nk_true;
         }
     }
     /* check if previously active property is now inactive */
     if (*state == NK_PROPERTY_DEFAULT && old_state != NK_PROPERTY_DEFAULT) {
         if (old_state == NK_PROPERTY_DRAG) {
-            ctx->input.mouse.grab = nk_false;
-            ctx->input.mouse.grabbed = nk_false;
-            ctx->input.mouse.ungrab = nk_true;
+            //ctx->input.mouse.grab = nk_false;
+            //ctx->input.mouse.grabbed = nk_false;
+            //ctx->input.mouse.ungrab = nk_true;
         }
         win->property.select_start = 0;
         win->property.select_end = 0;
