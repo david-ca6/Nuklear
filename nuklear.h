@@ -28697,6 +28697,94 @@ nk_combo_begin(struct nk_context *ctx, struct nk_window *win,
     return 1;
 }
 NK_API nk_bool
+nk_combo_begin_text_stealth(struct nk_context *ctx, const char *selected, int len,
+    struct nk_vec2 size)
+{
+    const struct nk_input *in;
+    struct nk_window *win;
+    struct nk_style *style;
+
+    enum nk_widget_layout_states s;
+    int is_clicked = nk_false;
+    struct nk_rect header;
+    const struct nk_style_item *background;
+    struct nk_text text;
+
+    NK_ASSERT(ctx);
+    NK_ASSERT(selected);
+    NK_ASSERT(ctx->current);
+    NK_ASSERT(ctx->current->layout);
+    if (!ctx || !ctx->current || !ctx->current->layout || !selected)
+        return 0;
+
+    win = ctx->current;
+    style = &ctx->style;
+    s = nk_widget(&header, ctx);
+    if (s == NK_WIDGET_INVALID)
+        return 0;
+
+    in = (win->layout->flags & NK_WINDOW_ROM || s == NK_WIDGET_ROM)? 0: &ctx->input;
+    if (nk_button_behavior(&ctx->last_widget_state, header, in, NK_BUTTON_DEFAULT))
+        is_clicked = nk_true;
+
+    /* draw combo box header background and border */
+    if (ctx->last_widget_state & NK_WIDGET_STATE_ACTIVED) {
+        background = &style->combo.active;
+        text.text = style->combo.label_active;
+    } else if (ctx->last_widget_state & NK_WIDGET_STATE_HOVER) {
+        background = &style->combo.hover;
+        text.text = style->combo.label_hover;
+    } else {
+        background = &style->combo.normal;
+        text.text = style->combo.label_normal;
+    }
+
+    switch(background->type) {
+        case NK_STYLE_ITEM_IMAGE:
+            text.background = nk_rgba(0, 0, 0, 0);
+            nk_draw_image(&win->buffer, header, &background->data.image, nk_white);
+            break;
+        case NK_STYLE_ITEM_NINE_SLICE:
+            text.background = nk_rgba(0, 0, 0, 0);
+            nk_draw_nine_slice(&win->buffer, header, &background->data.slice, nk_white);
+            break;
+        case NK_STYLE_ITEM_COLOR:
+            text.background = background->data.color;
+            nk_fill_rect(&win->buffer, header, style->combo.rounding, background->data.color);
+            //nk_stroke_rect(&win->buffer, header, style->combo.rounding, style->combo.border, style->combo.border_color);
+            break;
+    }
+    {
+        /* print currently selected text item */
+        struct nk_rect label;
+        struct nk_rect button;
+        struct nk_rect content;
+
+        /* calculate button */
+        button.w = header.h - 2 * style->combo.button_padding.y;
+        button.x = (header.x + header.w - header.h) - style->combo.button_padding.x;
+        button.y = header.y + style->combo.button_padding.y;
+        button.h = button.w;
+
+        content.x = button.x + style->combo.button.padding.x;
+        content.y = button.y + style->combo.button.padding.y;
+        content.w = button.w - 2 * style->combo.button.padding.x;
+        content.h = button.h - 2 * style->combo.button.padding.y;
+
+        /* draw selected label */
+        text.padding = nk_vec2(0,0);
+        label.x = header.x + style->combo.content_padding.x;
+        label.y = header.y + style->combo.content_padding.y;
+        label.h = header.h - 2 * style->combo.content_padding.y;
+  
+        label.w = header.w - 2 * style->combo.content_padding.x;
+        nk_widget_text(&win->buffer, label, selected, len, &text,
+            NK_TEXT_LEFT, ctx->style.font);
+
+    }
+    return nk_combo_begin(ctx, win, size, is_clicked, header);
+}
+NK_API nk_bool
 nk_combo_begin_text(struct nk_context *ctx, const char *selected, int len,
     struct nk_vec2 size)
 {
@@ -28801,6 +28889,11 @@ nk_combo_begin_text(struct nk_context *ctx, const char *selected, int len,
                 &ctx->style.combo.button, sym, style->font);
     }
     return nk_combo_begin(ctx, win, size, is_clicked, header);
+}
+NK_API nk_bool
+nk_combo_begin_label_stealth(struct nk_context *ctx, const char *selected, struct nk_vec2 size)
+{
+    return nk_combo_begin_text_stealth(ctx, selected, nk_strlen(selected), size);
 }
 NK_API nk_bool
 nk_combo_begin_label(struct nk_context *ctx, const char *selected, struct nk_vec2 size)
