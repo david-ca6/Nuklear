@@ -2590,6 +2590,7 @@ NK_API struct nk_rect nk_layout_space_rect_to_local(struct nk_context*, struct n
 ///
 */
 NK_API void nk_spacer(struct nk_context* );
+NK_API void nk_separator(struct nk_context *ctx );
 
 
 /* =============================================================================
@@ -3168,6 +3169,7 @@ NK_API nk_bool nk_button_image_text_styled(struct nk_context*,const struct nk_st
 NK_API void nk_button_set_behavior(struct nk_context*, enum nk_button_behavior);
 NK_API nk_bool nk_button_push_behavior(struct nk_context*, enum nk_button_behavior);
 NK_API nk_bool nk_button_pop_behavior(struct nk_context*);
+NK_API nk_bool nk_button_label_stealth(struct nk_context *ctx, const char *title);
 /* =============================================================================
  *
  *                                  CHECKBOX
@@ -3522,6 +3524,7 @@ NK_API void nk_combobox_callback(struct nk_context*, void(*item_getter)(void*, i
  *
  * ============================================================================= */
 NK_API nk_bool nk_combo_begin_text(struct nk_context*, const char *selected, int, struct nk_vec2 size);
+NK_API nk_bool nk_combo_begin_label_stealth(struct nk_context *ctx, const char *selected, struct nk_vec2 size);
 NK_API nk_bool nk_combo_begin_label(struct nk_context*, const char *selected, struct nk_vec2 size);
 NK_API nk_bool nk_combo_begin_color(struct nk_context*, struct nk_color color, struct nk_vec2 size);
 NK_API nk_bool nk_combo_begin_symbol(struct nk_context*,  enum nk_symbol_type,  struct nk_vec2 size);
@@ -4859,7 +4862,8 @@ NK_API void nk_draw_list_push_userdata(struct nk_draw_list*, nk_handle userdata)
 enum nk_style_item_type {
     NK_STYLE_ITEM_COLOR,
     NK_STYLE_ITEM_IMAGE,
-    NK_STYLE_ITEM_NINE_SLICE
+    NK_STYLE_ITEM_NINE_SLICE,
+    NK_STYLE_ITEM_STEALTH
 };
 
 union nk_style_item_data {
@@ -19651,6 +19655,8 @@ nk_panel_begin(struct nk_context *ctx, const char *title, enum nk_panel_type pan
                 text.background = background->data.color;
                 nk_fill_rect(out, header, 0, background->data.color);
                 break;
+            case NK_STYLE_ITEM_STEALTH:
+                break;
         }
 
         /* window close button */
@@ -19731,6 +19737,8 @@ nk_panel_begin(struct nk_context *ctx, const char *title, enum nk_panel_type pan
                 break;
             case NK_STYLE_ITEM_COLOR:
                 nk_fill_rect(out, body, 0, style->window.fixed_background.data.color);
+                break;
+            case NK_STYLE_ITEM_STEALTH:
                 break;
         }
     }
@@ -22271,7 +22279,7 @@ nk_separator(struct nk_context *ctx )
 {
     struct nk_rect dummy_rect = { 0, 0, 0, 0 };
     nk_panel_alloc_space( &dummy_rect, ctx );
-    nk_stroke_line(&ctx->current->buffer, dummy_rect.x, dummy_rect.y+dummy_rect.h/2, dummy_rect.x+dummy_rect.w, dummy_rect.y+dummy_rect.h/2, 1.0f, nk_rgb(255, 255, 255));
+    nk_stroke_line(&ctx->current->buffer, dummy_rect.x, dummy_rect.y+dummy_rect.h/2, dummy_rect.x+dummy_rect.w, dummy_rect.y+dummy_rect.h/2, 1.0f, nk_rgba(255, 255, 255, 64));
 }
 
 
@@ -22336,6 +22344,8 @@ nk_tree_state_base(struct nk_context *ctx, enum nk_tree_type type,
                 nk_fill_rect(out, header, 0, style->tab.border_color);
                 nk_fill_rect(out, nk_shrink_rect(header, style->tab.border),
                     style->tab.rounding, background->data.color);
+                break;
+            case NK_STYLE_ITEM_STEALTH:
                 break;
         }
     } else text.background = style->window.background;
@@ -22526,6 +22536,8 @@ nk_tree_element_image_push_hashed_base(struct nk_context *ctx, enum nk_tree_type
                 nk_fill_rect(out, header, 0, style->tab.border_color);
                 nk_fill_rect(out, nk_shrink_rect(header, style->tab.border),
                     style->tab.rounding, background->data.color);
+                break;
+            case NK_STYLE_ITEM_STEALTH:
                 break;
         }
     }
@@ -23826,6 +23838,8 @@ nk_draw_button(struct nk_command_buffer *out,
             nk_fill_rect(out, *bounds, style->rounding, background->data.color);
             nk_stroke_rect(out, *bounds, style->rounding, style->border, style->border_color);
             break;
+        case NK_STYLE_ITEM_STEALTH:
+            break;
     }
     return background;
 }
@@ -24185,8 +24199,7 @@ nk_button_text(struct nk_context *ctx, const char *title, int len)
     if (!ctx) return 0;
     return nk_button_text_styled(ctx, &ctx->style.button, title, len);
 }
-NK_API nk_bool nk_button_label_styled(struct nk_context *ctx,
-    const struct nk_style_button *style, const char *title)
+NK_API nk_bool nk_button_label_styled(struct nk_context *ctx, const struct nk_style_button *style, const char *title)
 {
     return nk_button_text_styled(ctx, style, title, nk_strlen(title));
 }
@@ -24194,6 +24207,23 @@ NK_API nk_bool nk_button_label(struct nk_context *ctx, const char *title)
 {
     return nk_button_text(ctx, title, nk_strlen(title));
 }
+
+NK_API nk_bool nk_button_label_stealth(struct nk_context *ctx, const char *title)
+{
+    struct nk_style_button style;
+    memcpy(&style, &ctx->style.button, sizeof(struct nk_style_button));
+    memcpy(&style.text_background, &ctx->style.window.background, sizeof(struct nk_color));
+
+    style.normal.type = NK_STYLE_ITEM_STEALTH;
+    style.hover.type = NK_STYLE_ITEM_STEALTH;
+    //style.active.type = NK_STYLE_ITEM_STEALTH;
+
+    style.text_alignment = NK_TEXT_ALIGN_MIDDLE | NK_TEXT_ALIGN_LEFT;
+    style.border = 0.0f;
+
+    return nk_button_text_styled(ctx, &style, title, nk_strlen(title));
+}
+
 NK_API nk_bool
 nk_button_color(struct nk_context *ctx, struct nk_color color)
 {
@@ -24766,6 +24796,8 @@ nk_draw_selectable(struct nk_command_buffer *out,
             text.background = background->data.color;
             nk_fill_rect(out, *bounds, style->rounding, background->data.color);
             break;
+        case NK_STYLE_ITEM_STEALTH:
+            break;
     }
     if (icon) {
         if (img) nk_draw_image(out, *icon, img, nk_white);
@@ -25143,6 +25175,8 @@ nk_draw_slider(struct nk_command_buffer *out, nk_flags state,
             nk_fill_rect(out, *bounds, style->rounding, background->data.color);
             nk_stroke_rect(out, *bounds, style->rounding, style->border, style->border_color);
             break;
+        case NK_STYLE_ITEM_STEALTH:
+            break;
     }
 
     /* draw slider bar */
@@ -25374,6 +25408,8 @@ nk_draw_progress(struct nk_command_buffer *out, nk_flags state,
             nk_fill_rect(out, *bounds, style->rounding, background->data.color);
             nk_stroke_rect(out, *bounds, style->rounding, style->border, style->border_color);
             break;
+        case NK_STYLE_ITEM_STEALTH:
+            break;
     }
 
     /* draw cursor */
@@ -25387,6 +25423,8 @@ nk_draw_progress(struct nk_command_buffer *out, nk_flags state,
         case NK_STYLE_ITEM_COLOR:
             nk_fill_rect(out, *scursor, style->rounding, cursor->data.color);
             nk_stroke_rect(out, *scursor, style->rounding, style->border, style->border_color);
+            break;
+        case NK_STYLE_ITEM_STEALTH:
             break;
     }
 }
@@ -25576,6 +25614,8 @@ nk_draw_scrollbar(struct nk_command_buffer *out, nk_flags state,
             nk_fill_rect(out, *bounds, style->rounding, background->data.color);
             nk_stroke_rect(out, *bounds, style->rounding, style->border, style->border_color);
             break;
+        case NK_STYLE_ITEM_STEALTH:
+            break;
     }
 
     /* draw cursor */
@@ -25589,6 +25629,8 @@ nk_draw_scrollbar(struct nk_command_buffer *out, nk_flags state,
         case NK_STYLE_ITEM_COLOR:
             nk_fill_rect(out, *scroll, style->rounding_cursor, cursor->data.color);
             nk_stroke_rect(out, *scroll, style->rounding_cursor, style->border_cursor, style->cursor_border_color);
+            break;
+        case NK_STYLE_ITEM_STEALTH:
             break;
     }
 }
@@ -27143,6 +27185,8 @@ nk_do_edit(nk_flags *state, struct nk_command_buffer *out,
             nk_fill_rect(out, bounds, style->rounding, background->data.color);
             nk_stroke_rect(out, bounds, style->rounding, style->border, style->border_color);
             break;
+        case NK_STYLE_ITEM_STEALTH:
+            break;
     }}
 
 
@@ -27724,6 +27768,8 @@ nk_draw_property(struct nk_command_buffer *out, const struct nk_style_property *
             nk_fill_rect(out, *bounds, style->rounding, background->data.color);
             nk_stroke_rect(out, *bounds, style->rounding, style->border, background->data.color);
             break;
+        case NK_STYLE_ITEM_STEALTH:
+            break;
     }
 
     /* draw label */
@@ -28196,6 +28242,8 @@ nk_chart_begin_colored(struct nk_context *ctx, enum nk_chart_type type,
             nk_fill_rect(&win->buffer, bounds, style->rounding, style->border_color);
             nk_fill_rect(&win->buffer, nk_shrink_rect(bounds, style->border),
                 style->rounding, style->background.data.color);
+            break;
+        case NK_STYLE_ITEM_STEALTH:
             break;
     }
     return 1;
@@ -28753,24 +28801,26 @@ nk_combo_begin_text_stealth(struct nk_context *ctx, const char *selected, int le
             nk_fill_rect(&win->buffer, header, style->combo.rounding, background->data.color);
             //nk_stroke_rect(&win->buffer, header, style->combo.rounding, style->combo.border, style->combo.border_color);
             break;
+        case NK_STYLE_ITEM_STEALTH:
+            break;
     }
     {
         /* print currently selected text item */
         struct nk_rect label;
         struct nk_rect button;
-        struct nk_rect content;
+//        struct nk_rect content;
 
         /* calculate button */
         button.w = header.h - 2 * style->combo.button_padding.y;
         button.x = (header.x + header.w - header.h) - style->combo.button_padding.x;
         button.y = header.y + style->combo.button_padding.y;
         button.h = button.w;
-
+/*
         content.x = button.x + style->combo.button.padding.x;
         content.y = button.y + style->combo.button.padding.y;
         content.w = button.w - 2 * style->combo.button.padding.x;
         content.h = button.h - 2 * style->combo.button.padding.y;
-
+*/
         /* draw selected label */
         text.padding = nk_vec2(0,0);
         label.x = header.x + style->combo.content_padding.x;
@@ -28840,6 +28890,8 @@ nk_combo_begin_text(struct nk_context *ctx, const char *selected, int len,
             text.background = background->data.color;
             nk_fill_rect(&win->buffer, header, style->combo.rounding, background->data.color);
             nk_stroke_rect(&win->buffer, header, style->combo.rounding, style->combo.border, style->combo.border_color);
+            break;
+        case NK_STYLE_ITEM_STEALTH:
             break;
     }
     {
@@ -28946,6 +28998,8 @@ nk_combo_begin_color(struct nk_context *ctx, struct nk_color color, struct nk_ve
             nk_fill_rect(&win->buffer, header, style->combo.rounding, background->data.color);
             nk_stroke_rect(&win->buffer, header, style->combo.rounding, style->combo.border, style->combo.border_color);
             break;
+        case NK_STYLE_ITEM_STEALTH:
+            break;
     }
     {
         struct nk_rect content;
@@ -29047,6 +29101,8 @@ nk_combo_begin_symbol(struct nk_context *ctx, enum nk_symbol_type symbol, struct
             nk_fill_rect(&win->buffer, header, style->combo.rounding, background->data.color);
             nk_stroke_rect(&win->buffer, header, style->combo.rounding, style->combo.border, style->combo.border_color);
             break;
+        case NK_STYLE_ITEM_STEALTH:
+            break;
     }
     {
         struct nk_rect bounds = {0,0,0,0};
@@ -29144,6 +29200,8 @@ nk_combo_begin_symbol_text(struct nk_context *ctx, const char *selected, int len
             nk_fill_rect(&win->buffer, header, style->combo.rounding, background->data.color);
             nk_stroke_rect(&win->buffer, header, style->combo.rounding, style->combo.border, style->combo.border_color);
             break;
+        case NK_STYLE_ITEM_STEALTH:
+            break;
     }
     {
         struct nk_rect content;
@@ -29234,6 +29292,8 @@ nk_combo_begin_image(struct nk_context *ctx, struct nk_image img, struct nk_vec2
         case NK_STYLE_ITEM_COLOR:
             nk_fill_rect(&win->buffer, header, style->combo.rounding, background->data.color);
             nk_stroke_rect(&win->buffer, header, style->combo.rounding, style->combo.border, style->combo.border_color);
+            break;
+        case NK_STYLE_ITEM_STEALTH:
             break;
     }
     {
@@ -29334,6 +29394,8 @@ nk_combo_begin_image_text(struct nk_context *ctx, const char *selected, int len,
             text.background = background->data.color;
             nk_fill_rect(&win->buffer, header, style->combo.rounding, background->data.color);
             nk_stroke_rect(&win->buffer, header, style->combo.rounding, style->combo.border, style->combo.border_color);
+            break;
+        case NK_STYLE_ITEM_STEALTH:
             break;
     }
     {
