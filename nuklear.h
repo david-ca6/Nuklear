@@ -22279,7 +22279,7 @@ nk_separator(struct nk_context *ctx )
 {
     struct nk_rect dummy_rect = { 0, 0, 0, 0 };
     nk_panel_alloc_space( &dummy_rect, ctx );
-    nk_stroke_line(&ctx->current->buffer, dummy_rect.x, dummy_rect.y+dummy_rect.h/2, dummy_rect.x+dummy_rect.w, dummy_rect.y+dummy_rect.h/2, 1.0f, nk_rgba(255, 255, 255, 64));
+    nk_stroke_line(&ctx->current->buffer, dummy_rect.x, dummy_rect.y+dummy_rect.h/2, dummy_rect.x+dummy_rect.w, dummy_rect.y+dummy_rect.h/2, 1.0f, ctx->style.text.color);
 }
 
 
