@@ -852,8 +852,7 @@ NK_API void nk_input_key(struct nk_context*, enum nk_keys, nk_bool down);
 NK_API void nk_input_button(struct nk_context*, enum nk_buttons, int x, int y, nk_bool down);
 /*/// #### nk_input_scroll
 /// Copies the last mouse scroll value to nuklear. Is generally
-/// a scroll value. So does not have to come from mouse and could also originate
-/// TODO finish this sentence
+/// a scroll value. But does not have to come from mouse.
 ///
 /// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~c
 /// void nk_input_scroll(struct nk_context *ctx, struct nk_vec2 val);
@@ -3464,7 +3463,7 @@ enum nk_edit_flags {
     NK_EDIT_GOTO_END_ON_ACTIVATE    = NK_FLAG(11)
 };
 enum nk_edit_types {
-    NK_EDIT_SIMPLE  = NK_EDIT_ALWAYS_INSERT_MODE|NK_EDIT_CLIPBOARD,
+    NK_EDIT_SIMPLE  = NK_EDIT_ALWAYS_INSERT_MODE,
     NK_EDIT_FIELD   = NK_EDIT_SIMPLE|NK_EDIT_SELECTABLE|NK_EDIT_CLIPBOARD,
     NK_EDIT_BOX     = NK_EDIT_ALWAYS_INSERT_MODE| NK_EDIT_SELECTABLE| NK_EDIT_MULTILINE|NK_EDIT_ALLOW_TAB|NK_EDIT_CLIPBOARD,
     NK_EDIT_EDITOR  = NK_EDIT_SELECTABLE|NK_EDIT_MULTILINE|NK_EDIT_ALLOW_TAB| NK_EDIT_CLIPBOARD
