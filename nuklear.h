@@ -521,6 +521,10 @@ enum nk_symbol_type {
     NK_SYMBOL_TRIANGLE_DOWN,
     NK_SYMBOL_TRIANGLE_LEFT,
     NK_SYMBOL_TRIANGLE_RIGHT,
+    NK_SYMBOL_TRIANGLESQ_UP,
+    NK_SYMBOL_TRIANGLESQ_DOWN,
+    NK_SYMBOL_TRIANGLESQ_LEFT,
+    NK_SYMBOL_TRIANGLESQ_RIGHT,
     NK_SYMBOL_PLUS,
     NK_SYMBOL_MINUS,
     NK_SYMBOL_MAX
@@ -3169,6 +3173,7 @@ NK_API void nk_button_set_behavior(struct nk_context*, enum nk_button_behavior);
 NK_API nk_bool nk_button_push_behavior(struct nk_context*, enum nk_button_behavior);
 NK_API nk_bool nk_button_pop_behavior(struct nk_context*);
 NK_API nk_bool nk_button_label_stealth(struct nk_context *ctx, const char *title);
+NK_API nk_bool nk_button_image_stealth(struct nk_context*, struct nk_image img);
 /* =============================================================================
  *
  *                                  CHECKBOX
@@ -23726,9 +23731,6 @@ nk_nine_slice_is_sub9slice(const struct nk_nine_slice* slice)
 }
 
 
-
-
-
 /* ==============================================================
  *
  *                          BUTTON
@@ -23779,6 +23781,30 @@ nk_draw_symbol(struct nk_command_buffer *out, enum nk_symbol_type type,
             (type == NK_SYMBOL_TRIANGLE_LEFT) ? NK_LEFT:
             (type == NK_SYMBOL_TRIANGLE_UP) ? NK_UP: NK_DOWN;
         nk_triangle_from_direction(points, content, 0, 0, heading);
+        nk_fill_triangle(out, points[0].x, points[0].y, points[1].x, points[1].y,
+            points[2].x, points[2].y, foreground);
+    } break;
+    case NK_SYMBOL_TRIANGLESQ_UP:
+    case NK_SYMBOL_TRIANGLESQ_DOWN:
+    case NK_SYMBOL_TRIANGLESQ_LEFT:
+    case NK_SYMBOL_TRIANGLESQ_RIGHT: {
+        enum nk_heading heading;
+        struct nk_vec2 points[3];
+        heading = (type == NK_SYMBOL_TRIANGLESQ_RIGHT) ? NK_RIGHT :
+            (type == NK_SYMBOL_TRIANGLESQ_LEFT) ? NK_LEFT:
+            (type == NK_SYMBOL_TRIANGLESQ_UP) ? NK_UP: NK_DOWN;
+
+        // Calculate the size of the square triangle (use the smaller dimension)
+        float size = (content.w < content.h) ? content.w : content.h;
+
+        // Create a new centered square content rect
+        struct nk_rect centered_content = nk_rect(content.x + (content.w - size) / 2, content.y + (content.h - size) / 2, size, size);
+
+        // Adjust padding to create a square triangle
+        float padding_x = (heading == NK_LEFT || heading == NK_RIGHT) ? 0 : (size - centered_content.h) / 2;
+        float padding_y = (heading == NK_UP || heading == NK_DOWN) ? 0 : (size - centered_content.w) / 2;
+
+        nk_triangle_from_direction(points, centered_content, padding_x, padding_y, heading);
         nk_fill_triangle(out, points[0].x, points[0].y, points[1].x, points[1].y,
             points[2].x, points[2].y, foreground);
     } break;
@@ -24221,6 +24247,24 @@ NK_API nk_bool nk_button_label_stealth(struct nk_context *ctx, const char *title
     style.border = 0.0f;
 
     return nk_button_text_styled(ctx, &style, title, nk_strlen(title));
+}
+NK_API nk_bool nk_button_image_stealth(struct nk_context *ctx, struct nk_image img)
+{
+    NK_ASSERT(ctx);
+    if (!ctx) return 0;
+
+    struct nk_style_button style;
+    memcpy(&style, &ctx->style.button, sizeof(struct nk_style_button));
+    memcpy(&style.text_background, &ctx->style.window.background, sizeof(struct nk_color));
+
+    style.normal.type = NK_STYLE_ITEM_STEALTH;
+    style.hover.type = NK_STYLE_ITEM_STEALTH;
+    //style.active.type = NK_STYLE_ITEM_STEALTH;
+
+    style.text_alignment = NK_TEXT_ALIGN_MIDDLE | NK_TEXT_ALIGN_LEFT;
+    style.border = 0.0f;
+
+    return nk_button_image_styled(ctx, &style, img);
 }
 
 NK_API nk_bool
